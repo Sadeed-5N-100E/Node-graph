@@ -1,0 +1,469 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Graph Visualizer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .node {
+            cursor: pointer;
+            transition: fill 0.3s;
+        }
+
+        .node:hover {
+            fill: #3498db;
+        }
+
+        .link {
+            stroke: #2c3e50;
+            stroke-opacity: 0.6;
+            stroke-width: 2px;
+        }
+
+        .popup {
+            position: absolute;
+            background: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            max-width: 300px;
+        }
+
+        .popup h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+
+        .popup p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        #graph {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            margin-top: 20px;
+        }
+
+        .checkbox-group {
+            margin: 15px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+            width: auto;
+        }
+
+        .checkbox-item label {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .floating-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 300px;
+            z-index: 1000;
+        }
+
+        .panel-header {
+            padding: 12px 15px;
+            background: #3498db;
+            color: white;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header:hover {
+            background: #2980b9;
+        }
+
+        .panel-content {
+            padding: 15px;
+            display: none;
+            background: white;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .panel-content.active {
+            display: block;
+        }
+
+        .connections-dropdown {
+            position: relative;
+            margin: 10px 0;
+        }
+
+        .connections-dropdown .dropdown-header {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1001;
+        }
+
+        .checkbox-group.active {
+            display: block;
+        }
+
+        #graph {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="graph"></div>
+    
+    <div class="floating-panel">
+        <div class="panel-header" onclick="togglePanel()">
+            <span>Add New Node</span>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="panel-content" id="addNodePanel">
+            <div class="input-group">
+                <input type="text" id="nodeName" placeholder="Name">
+                <input type="number" id="nodeAge" placeholder="Age">
+            </div>
+            <textarea id="nodeDescription" placeholder="Description"></textarea>
+            
+            <div class="connections-dropdown">
+                <div class="dropdown-header" onclick="toggleConnections()">
+                    Select Connections ▼
+                </div>
+                <div id="nodeConnections" class="checkbox-group">
+                    <!-- Checkboxes will be added here -->
+                </div>
+            </div>
+            
+            <button onclick="addNode()">Add Node</button>
+        </div>
+    </div>
+
+    <script>
+        // Data structure
+        let nodes = [];
+        let links = [];
+
+        // D3.js setup
+        const width = 800;
+        const height = 600;
+        
+        const svg = d3.select("#graph")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const simulation = d3.forceSimulation()
+            .force("link", d3.forceLink().id(d => d.id).distance(150))
+            .force("charge", d3.forceManyBody().strength(-200))
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        function updateGraph() {
+            // Clear existing elements
+            svg.selectAll("*").remove();
+
+            // Draw links
+            const link = svg.append("g")
+                .selectAll("line")
+                .data(links)
+                .enter()
+                .append("line")
+                .attr("class", "link");
+
+            // Draw nodes
+            const node = svg.append("g")
+                .selectAll("circle")
+                .data(nodes)
+                .enter()
+                .append("circle")
+                .attr("class", "node")
+                .attr("r", 20)
+                .attr("fill", "#69b3a2")
+                .on("click", showPopup);
+
+            // Add node labels
+            const labels = svg.append("g")
+                .selectAll("text")
+                .data(nodes)
+                .enter()
+                .append("text")
+                .text(d => d.name)
+                .attr("font-size", "12px")
+                .attr("dx", 25)
+                .attr("dy", 5);
+
+            // Update simulation
+            simulation
+                .nodes(nodes)
+                .on("tick", () => {
+                    link
+                        .attr("x1", d => d.source.x)
+                        .attr("y1", d => d.source.y)
+                        .attr("x2", d => d.target.x)
+                        .attr("y2", d => d.target.y);
+
+                    node
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y);
+
+                    labels
+                        .attr("x", d => d.x)
+                        .attr("y", d => d.y);
+                });
+
+            // Update checkboxes for connections
+            const connectionsDiv = document.getElementById("nodeConnections");
+            connectionsDiv.innerHTML = ""; // Clear existing checkboxes
+
+            nodes.forEach(node => {
+                const checkboxItem = document.createElement("div");
+                checkboxItem.className = "checkbox-item";
+                
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.id = `connect-${node.id}`;
+                checkbox.value = node.id;
+                
+                const label = document.createElement("label");
+                label.htmlFor = `connect-${node.id}`;
+                label.textContent = node.name;
+                
+                checkboxItem.appendChild(checkbox);
+                checkboxItem.appendChild(label);
+                connectionsDiv.appendChild(checkboxItem);
+            });
+
+            simulation.force("link").links(links);
+            simulation.alpha(1).restart();
+        }
+
+        function showPopup(event, d) {
+            const popup = document.getElementById("popup");
+            const connectedNodes = links
+                .filter(link => link.source.id === d.id || link.target.id === d.id)
+                .map(link => link.source.id === d.id ? link.target.name : link.source.name);
+
+            popup.innerHTML = `
+                <h4>${d.name}</h4>
+                <p>Age: ${d.age}</p>
+                <p>Description: ${d.description}</p>
+                <p>Connected to: ${connectedNodes.join(", ") || "None"}</p>
+            `;
+            
+            popup.style.display = "block";
+            popup.style.left = (event.pageX + 10) + "px";
+            popup.style.top = (event.pageY + 10) + "px";
+        }
+
+        function addNode() {
+            const name = document.getElementById("nodeName").value;
+            const age = document.getElementById("nodeAge").value;
+            const description = document.getElementById("nodeDescription").value;
+            
+            if (!name) return;
+
+            const newNode = {
+                id: nodes.length,
+                name,
+                age,
+                description
+            };
+
+            nodes.push(newNode);
+
+            // Get selected connections from checkboxes
+            const checkboxes = document.querySelectorAll('#nodeConnections input[type="checkbox"]:checked');
+            checkboxes.forEach(checkbox => {
+                links.push({
+                    source: newNode.id,
+                    target: parseInt(checkbox.value)
+                });
+            });
+
+            updateGraph();
+
+            // Clear inputs
+            document.getElementById("nodeName").value = "";
+            document.getElementById("nodeAge").value = "";
+            document.getElementById("nodeDescription").value = "";
+        }
+
+        // Close popup when clicking outside
+        document.addEventListener("click", (event) => {
+            const popup = document.getElementById("popup");
+            if (!event.target.closest(".node") && !event.target.closest(".popup")) {
+                popup.style.display = "none";
+            }
+        });
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const connectionsDropdown = document.getElementById('nodeConnections');
+            const dropdownHeader = document.querySelector('.dropdown-header');
+            
+            if (!event.target.closest('.connections-dropdown')) {
+                connectionsDropdown.classList.remove('active');
+            }
+        });
+
+        // Initial render
+        updateGraph();
+
+        // Add these new functions
+        function togglePanel() {
+            const panel = document.getElementById('addNodePanel');
+            panel.classList.toggle('active');
+            const icon = document.querySelector('.toggle-icon');
+            icon.textContent = panel.classList.contains('active') ? '▲' : '▼';
+        }
+
+        function toggleConnections() {
+            const connections = document.getElementById('nodeConnections');
+            connections.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
+
+<!-- README.md -->
+# Network Graph Visualizer
+
+This is a simple web application that allows users to create and visualize network graphs of people/family/contacts.
+
+## Features
+- Add nodes with name, age, and description
+- Connect nodes to create relationships
+- Interactive visualization using D3.js
+- Click nodes to view detailed information
+- Drag nodes to rearrange the graph
+
+## Dependencies
+- D3.js v7
+
+## How to Run
+1. Save the code as `index.html`
+2. Open the file in a web browser
+   - Note: Due to browser security restrictions, you may need to serve the file through a local web server
+   - You can use Python's built-in server: `python -m http.server`
+   - Or use VS Code's Live Server extension
+
+## Usage
+1. Enter node details in the form (name, age, description)
+2. Select existing nodes to connect to (multiple selection possible)
+3. Click "Add Node" to create the node
+4. Click on nodes to view their details
+5. Drag nodes to rearrange the layout
