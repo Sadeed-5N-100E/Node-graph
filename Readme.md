@@ -1,7 +1,8 @@
 <!-- README.md -->
 # Network Graph Visualizer
-  Try to run the file in your browser. Feel free to add functionalities and fork .
+Try to run the file in your browser. Feel free to add functionalities and fork .
  Improved Version  currently under development
+ 
 This is a simple web application that allows users to create and visualize network graphs of people/family/contacts.
 ![image](https://github.com/user-attachments/assets/33ce5aab-7c11-44d6-ad52-7697b9318d1f)
 
