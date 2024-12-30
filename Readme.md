@@ -1,8 +1,9 @@
 <!-- README.md -->
 # Network Graph Visualizer
-Currently Under development
-
+  Try to run the file in your browser. Feel free to add functionalities and fork .
+ Improved Version  currently under development
 This is a simple web application that allows users to create and visualize network graphs of people/family/contacts.
+![image](https://github.com/user-attachments/assets/33ce5aab-7c11-44d6-ad52-7697b9318d1f)
 
 ## Features
 - Add nodes with name, age, and description
@@ -10,8 +11,8 @@ This is a simple web application that allows users to create and visualize netwo
 - Interactive visualization using D3.js
   ### Pending Features
 - Click nodes to view detailed information 
-- Drag nodes to rearrange the graph 
-
+- Drag nodes to rearrange the graph
+- Keywords
 ## Dependencies
 - D3.js v7
 
